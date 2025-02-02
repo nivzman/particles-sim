@@ -2,7 +2,7 @@ mod init;
 mod sim;
 
 use std::collections::HashMap;
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, Forces, ForceRelation};
+use sim::{ParticleColor, Particle, Point, Vector, Simulation, Forces, ForceRelation, Physics, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT};
 
 use femtovg::Color;
 use rand::prelude::ThreadRng;
@@ -32,21 +32,25 @@ fn main() {
 //     }
 // }
 //
-// fn random_position(rng: &mut ThreadRng) -> Point {
-//     Point::new(rng.random_range(0.0..simulation::WORLD_WIDTH_FLOAT), rng.random_range(0.0..simulation::WORLD_HEIGHT_FLOAT))
-// }
+
+fn random_position(rng: &mut ThreadRng) -> Point {
+    Point::new(rng.random_range(0.0..WORLD_WIDTH_FLOAT), rng.random_range(0.0..WORLD_HEIGHT_FLOAT))
+}
 
 fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
     let mut particles = Vec::new();
-    // let mut rng = rand::rng();
-    particles.push(Particle::new(Point::new(300., 300.), Vector::new(0., 0.), ParticleColor::Red));
-    particles.push(Particle::new(Point::new(300., 500.), Vector::new(0., 0.), ParticleColor::Red));
-    particles.push(Particle::new(Point::new(450., 900.), Vector::new(0., 0.), ParticleColor::Red));
+
+    let mut rng = rand::rng();
+    for _ in 0..20 {
+        particles.push(Particle::new(random_position(&mut rng), Vector::new(0., 0.), ParticleColor::Red));
+    }
+    // particles.push(Particle::new(Point::new(300., 500.), Vector::new(0., 0.), ParticleColor::Red));
+    // particles.push(Particle::new(Point::new(450., 900.), Vector::new(0., 0.), ParticleColor::Red));
 
     let mut forces: Forces = HashMap::new();
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Red}, 10000.);
+    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Red}, -10000.);
 
-    let mut simulation = Simulation::new(forces, particles);
+    let mut simulation = Simulation::new(particles, forces, Physics::Emergence);
 
     let ticker_thread_window = app_context.window.clone();
     std::thread::spawn(move || {

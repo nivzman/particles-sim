@@ -5,11 +5,23 @@ use femtovg::Canvas;
 
 use def::{WorldEdge, PARTICLE_RADIUS, WORLD_WIDTH_BOUND, WORLD_HEIGHT_BOUND};
 
-pub use def::{ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, ForceRelation, Forces};
+pub use def::{ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, Forces};
 
 
-const MAX_APPLIED_FORCE: f32 = 0.1;
-const MAX_VELOCITY: f32 = 5.;
+mod physics_consts
+{
+    pub const MAX_APPLIED_FORCE: f32 = 0.1;
+    pub mod real
+    {
+    }
+
+    pub mod emergence
+    {
+        pub const GLOBAL_FORCE: f32 = -0.;
+        pub const DRAG_FORCE: f32 = 0.005;
+    }
+}
+
 
 pub struct Particle {
     position: Point,
@@ -19,13 +31,21 @@ pub struct Particle {
 pub struct Simulation {
     particles: Vec<Particle>,
     forces: Forces,
+    physics: Physics,
+}
+
+#[derive(Eq, PartialEq)]
+pub enum Physics {
+    Real,
+    Emergence,
 }
 
 impl Simulation {
-    pub fn new(forces: Forces, particles: Vec<Particle>) -> Self {
+    pub fn new(particles: Vec<Particle>, forces: Forces, physics: Physics) -> Self {
         Simulation {
             particles,
-            forces
+            forces,
+            physics,
         }
     }
 
@@ -60,17 +80,27 @@ impl Simulation {
             return;
         }
 
-        let Some(force) = self.forces.get(&ForceRelation { who: p1.color, to: p2.color}) else {
-            return;
-        };
+        let mut force = self.forces.get(&ForceRelation { who: p1.color, to: p2.color}).map(|f| *f).unwrap_or(0.);
+
+        if self.physics == Physics::Emergence {
+            force += physics_consts::emergence::GLOBAL_FORCE;
+        }
 
         let force = force / distance.powi(2);
-        let force = calc::float_min(force, MAX_APPLIED_FORCE);
-        let force = calc::float_max(force, -MAX_APPLIED_FORCE);
+        let force = calc::float_min(force, physics_consts::MAX_APPLIED_FORCE);
+        let force = calc::float_max(force, -physics_consts::MAX_APPLIED_FORCE);
 
         let p1_to_p2_vec = p2.position - p1.position;
         let p1_acceleration = Vector::from_angle_and_length(p1_to_p2_vec.angle_from_x_axis(), force);
-        self.particles[p1_index].velocity += p1_acceleration;
+
+        let p1 = &mut self.particles[p1_index];
+        p1.velocity += p1_acceleration;
+
+        if self.physics == Physics::Real {
+            return;
+        }
+
+        p1.velocity = p1.velocity.with_length(calc::float_max(0., p1.velocity.length() - physics_consts::emergence::DRAG_FORCE));
     }
 
     fn update_positions(&mut self) {
