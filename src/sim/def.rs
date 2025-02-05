@@ -34,7 +34,7 @@ pub struct ForceRelation {
     pub to: ParticleColor,
 }
 
-pub type Forces = HashMap<ForceRelation, f32>;
+pub type ForcesConfiguration = HashMap<ForceRelation, f32>;
 
 impl Into<Color> for ParticleColor {
     fn into(self) -> Color {

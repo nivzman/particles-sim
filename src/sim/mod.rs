@@ -5,20 +5,21 @@ use femtovg::Canvas;
 
 use def::{WorldEdge, PARTICLE_RADIUS, WORLD_WIDTH_BOUND, WORLD_HEIGHT_BOUND};
 
-pub use def::{ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, Forces};
+pub use def::{ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, ForcesConfiguration};
 
 
 mod physics_consts
 {
-    pub const MAX_APPLIED_FORCE: f32 = 0.1;
+    pub const WORLD_SINGLE_UNIT_SIZE_IN_PIXELS: f32 = 100.;
     pub mod real
     {
+        pub const MAX_APPLIED_FORCE: f32 = 0.1;
     }
 
     pub mod emergence
     {
-        pub const GLOBAL_FORCE: f32 = -0.;
-        pub const DRAG_FORCE: f32 = 0.005;
+        pub const FRICTION_MULTIPLIER: f32 = 0.5;
+        pub const COMMON_REPEL_FORCE_RADIUS: f32 = 0.1;
     }
 }
 
@@ -30,7 +31,7 @@ pub struct Particle {
 }
 pub struct Simulation {
     particles: Vec<Particle>,
-    forces: Forces,
+    forces: ForcesConfiguration,
     physics: Physics,
 }
 
@@ -41,7 +42,7 @@ pub enum Physics {
 }
 
 impl Simulation {
-    pub fn new(particles: Vec<Particle>, forces: Forces, physics: Physics) -> Self {
+    pub fn new(particles: Vec<Particle>, forces: ForcesConfiguration, physics: Physics) -> Self {
         Simulation {
             particles,
             forces,
@@ -63,6 +64,10 @@ impl Simulation {
     }
 
     fn update_velocities(&mut self) {
+        for particle in self.particles.iter_mut() {
+            particle.velocity *= physics_consts::emergence::FRICTION_MULTIPLIER;
+        }
+
         for i in 0..self.particles.len() {
             for j in i + 1..self.particles.len() {
                 self.update_velocities_for_pair(i, j);
@@ -75,32 +80,46 @@ impl Simulation {
         let p1 = &self.particles[p1_index];
         let p2 = &self.particles[p2_index];
 
-        let distance = p1.position.distance_to(p2.position);
-        if distance == 0. {
-            return;
-        }
+        let distance = p1.position.distance_to(p2.position) / physics_consts::WORLD_SINGLE_UNIT_SIZE_IN_PIXELS;
+        let configured_force = self.forces.get(&ForceRelation { who: p1.color, to: p2.color}).map(|f| *f).unwrap_or(0.);
 
-        let mut force = self.forces.get(&ForceRelation { who: p1.color, to: p2.color}).map(|f| *f).unwrap_or(0.);
-
-        if self.physics == Physics::Emergence {
-            force += physics_consts::emergence::GLOBAL_FORCE;
-        }
-
-        let force = force / distance.powi(2);
-        let force = calc::float_min(force, physics_consts::MAX_APPLIED_FORCE);
-        let force = calc::float_max(force, -physics_consts::MAX_APPLIED_FORCE);
+        let force = match self.physics {
+            Physics::Emergence => Self::calculate_force_emergence(configured_force, distance),
+            Physics::Real => Self::calculate_force_real(configured_force, distance),
+        };
 
         let p1_to_p2_vec = p2.position - p1.position;
         let p1_acceleration = Vector::from_angle_and_length(p1_to_p2_vec.angle_from_x_axis(), force);
+        self.particles[p1_index].velocity += p1_acceleration;
 
-        let p1 = &mut self.particles[p1_index];
-        p1.velocity += p1_acceleration;
+        // if self.physics == Physics::Real {
+        //     return;
+        // }
+        //
+        // p1.velocity = p1.velocity.with_length(calc::float_max(0., p1.velocity.length() - physics_consts::emergence::DRAG));
+    }
 
-        if self.physics == Physics::Real {
-            return;
+    fn calculate_force_real(configured_attraction_force: f32, distance: f32) -> f32 {
+        if distance == 0. {
+            return 0.;
         }
 
-        p1.velocity = p1.velocity.with_length(calc::float_max(0., p1.velocity.length() - physics_consts::emergence::DRAG_FORCE));
+        let force = configured_attraction_force / distance.powi(2);
+        let force = calc::float_min(force, physics_consts::real::MAX_APPLIED_FORCE);
+        calc::float_max(force, -physics_consts::real::MAX_APPLIED_FORCE)
+    }
+
+    fn calculate_force_emergence(configured_attraction_force: f32, distance: f32) -> f32 {
+        if distance <= physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS {
+            (distance / physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS) - 1.
+        } else if distance < 1. {
+            let numerator = f32::abs((2. * distance) - 1. - physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS);
+            let denominator = 1. - physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS;
+            let l = 1. - (numerator / denominator);
+            configured_attraction_force * l
+        } else {
+            0.
+        }
     }
 
     fn update_positions(&mut self) {

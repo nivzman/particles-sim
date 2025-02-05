@@ -2,7 +2,7 @@ mod init;
 mod sim;
 
 use std::collections::HashMap;
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, Forces, ForceRelation, Physics, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT};
+use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfiguration, ForceRelation, Physics, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT};
 
 use femtovg::Color;
 use rand::prelude::ThreadRng;
@@ -41,14 +41,26 @@ fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
     let mut particles = Vec::new();
 
     let mut rng = rand::rng();
-    for _ in 0..20 {
+    for _ in 0..700 {
         particles.push(Particle::new(random_position(&mut rng), Vector::new(0., 0.), ParticleColor::Red));
+        // particles.push(Particle::new(random_position(&mut rng), Vector::new(0., 0.), ParticleColor::Blue));
+        particles.push(Particle::new(random_position(&mut rng), Vector::new(0., 0.), ParticleColor::Green));
     }
-    // particles.push(Particle::new(Point::new(300., 500.), Vector::new(0., 0.), ParticleColor::Red));
-    // particles.push(Particle::new(Point::new(450., 900.), Vector::new(0., 0.), ParticleColor::Red));
+    // particles.push(Particle::new(Point::new(500., 400.), Vector::new(0., 0.), ParticleColor::Red));
+    // particles.push(Particle::new(Point::new(500., 450.), Vector::new(0., 0.), ParticleColor::Red));
 
-    let mut forces: Forces = HashMap::new();
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Red}, -10000.);
+    let mut forces: ForcesConfiguration = HashMap::new();
+    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Red}, 1.0);
+    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Blue}, 0.3);
+    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Green}, -1.0);
+
+    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Red}, 0.2);
+    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Blue}, 0.2);
+    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Green}, 0.2);
+
+    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Red}, 0.2);
+    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Blue}, -0.4);
+    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Green}, 0.0);
 
     let mut simulation = Simulation::new(particles, forces, Physics::Emergence);
 
