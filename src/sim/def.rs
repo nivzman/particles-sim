@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use femtovg::Color;
 
 pub type Vector = euclid::default::Vector2D<f32>;
@@ -19,11 +18,18 @@ pub struct Particle {
     pub(super) color: ParticleColor,
 }
 
+#[repr(usize)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ParticleColor {
-    Red,
-    Green,
-    Blue,
+    Red = 0,
+    Green = 1,
+    Blue = 2,
+}
+
+impl ParticleColor {
+    pub const fn matrix_len() -> usize {
+        return (ParticleColor::Blue as usize) + 1;
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -33,15 +39,6 @@ pub enum WorldEdge {
     Bottom,
     Top,
 }
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct ForceRelation {
-    pub who: ParticleColor,
-    pub to: ParticleColor,
-}
-
-pub type ForcesConfiguration = HashMap<ForceRelation, f32>;
-
 impl Into<Color> for ParticleColor {
     fn into(self) -> Color {
         match self {
@@ -62,4 +59,23 @@ impl Particle {
     }
 }
 
+pub struct ForceConfig {
+    matrix: [[f32; ParticleColor::matrix_len()]; ParticleColor::matrix_len()]
+}
 
+impl ForceConfig {
+    pub fn empty() -> Self {
+        ForceConfig {
+            matrix: [[0.; ParticleColor::matrix_len()]; ParticleColor::matrix_len()]
+        }
+    }
+
+    pub fn with_force(mut self, who: ParticleColor, to: ParticleColor, force: f32) -> Self {
+        self.matrix[who as usize][to as usize] = force;
+        self
+    }
+
+    pub fn get(&self, who: ParticleColor, to: ParticleColor) -> f32 {
+        self.matrix[who as usize][to as usize]
+    }
+}

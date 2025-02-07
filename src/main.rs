@@ -2,7 +2,7 @@ mod init;
 mod sim;
 
 use std::collections::HashMap;
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfiguration, ForceRelation, Physics};
+use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForceConfig, Physics};
 
 use femtovg::Color;
 use init::{AppWindowSurface, AppContext};
@@ -20,9 +20,9 @@ fn get_real_sim() -> Simulation {
     particles.push(Particle::new(Point::new(500., 500.), Vector::new(0., 0.), ParticleColor::Blue));
     particles.push(Particle::new(Point::new(500., 400.), Vector::new(3., 1.), ParticleColor::Red));
 
-    let mut forces: ForcesConfiguration = HashMap::new();
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Blue}, 10.);
-    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Red}, -0.1);
+    let forces = ForceConfig::empty()
+        .with_force(ParticleColor::Red, ParticleColor::Blue, 10.)
+        .with_force(ParticleColor::Blue, ParticleColor::Red, -0.1);
 
     Simulation::new(particles, forces, Physics::Real)
 }
@@ -30,25 +30,18 @@ fn get_real_sim() -> Simulation {
 fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
-    for _ in 0..400 {
+    for _ in 0..800 {
         particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Red));
         particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Green));
         particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Blue));
     }
 
-    let mut forces: ForcesConfiguration = HashMap::new();
-
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Red}, 1.0);
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Green}, 0.0);
-    forces.insert(ForceRelation { who: ParticleColor::Red, to: ParticleColor::Blue}, 0.0);
-
-    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Red}, 0.6);
-    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Green}, 0.0);
-    forces.insert(ForceRelation { who: ParticleColor::Blue, to: ParticleColor::Blue}, 1.0);
-
-    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Red}, 0.0);
-    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Green}, 1.0);
-    forces.insert(ForceRelation { who: ParticleColor::Green, to: ParticleColor::Blue}, 0.6);
+    let forces = ForceConfig::empty()
+        .with_force(ParticleColor::Red, ParticleColor::Red, 0.4)
+        .with_force(ParticleColor::Blue, ParticleColor::Red, 0.3)
+        .with_force(ParticleColor::Blue, ParticleColor::Blue, 0.3)
+        .with_force(ParticleColor::Green, ParticleColor::Green, 0.2)
+        .with_force(ParticleColor::Green, ParticleColor::Blue, 0.2);
 
     Simulation::new(particles, forces, Physics::Emergence)
 }
@@ -60,7 +53,7 @@ fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
     let ticker_thread_window = app_context.window.clone();
     std::thread::spawn(move || {
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            std::thread::sleep(std::time::Duration::from_millis(20));
             ticker_thread_window.request_redraw();
         }
     });

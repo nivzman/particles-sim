@@ -6,7 +6,7 @@ use rand::rngs::ThreadRng;
 
 use def::{WorldEdge, PARTICLE_RADIUS, WORLD_WIDTH_BOUND, WORLD_HEIGHT_BOUND};
 
-pub use def::{Particle, ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, ForcesConfiguration};
+pub use def::{Particle, ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, ForceConfig};
 pub use calc::random_position;
 
 mod physics_consts
@@ -28,7 +28,7 @@ mod physics_consts
 
 pub struct Simulation {
     particles: Vec<Particle>,
-    forces: ForcesConfiguration,
+    forces: ForceConfig,
     physics: Physics,
     rng: ThreadRng
 }
@@ -40,7 +40,7 @@ pub enum Physics {
 }
 
 impl Simulation {
-    pub fn new(particles: Vec<Particle>, forces: ForcesConfiguration, physics: Physics) -> Self {
+    pub fn new(particles: Vec<Particle>, forces: ForceConfig, physics: Physics) -> Self {
         Simulation {
             particles,
             forces,
@@ -82,7 +82,7 @@ impl Simulation {
         let p2 = &self.particles[p2_index];
 
         let distance = p1.position.distance_to(p2.position) / physics_consts::WORLD_SINGLE_UNIT_SIZE_IN_PIXELS;
-        let configured_force = self.forces.get(&ForceRelation { who: p1.color, to: p2.color}).map(|f| *f).unwrap_or(0.);
+        let configured_force = self.forces.get(p1.color, p2.color);
 
         let force = match self.physics {
             Physics::Emergence => Self::calculate_force_emergence(configured_force, distance),
