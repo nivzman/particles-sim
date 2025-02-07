@@ -1,8 +1,9 @@
+use rand::Rng;
 use super::def::{Point, WorldEdge, WORLD_HEIGHT_BOUND, WORLD_WIDTH_BOUND, PARTICLE_RADIUS};
 
 
 pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
-    if pos.x <= WORLD_WIDTH_BOUND && pos.x >= PARTICLE_RADIUS && pos.y <= WORLD_HEIGHT_BOUND && pos.y >= PARTICLE_RADIUS {
+    if !is_out_of_bounds(pos) {
         return None;
     }
 
@@ -31,6 +32,16 @@ pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
     }
 
     Some(curr.0)
+}
+
+pub fn is_out_of_bounds(pos: &Point) -> bool {
+    pos.x > WORLD_WIDTH_BOUND || pos.x < PARTICLE_RADIUS
+        || pos.y > WORLD_HEIGHT_BOUND || pos.y < PARTICLE_RADIUS
+}
+
+pub fn random_position() -> Point {
+    let mut rng = rand::rng();
+    Point::new(rng.random_range(0.0..WORLD_WIDTH_BOUND), rng.random_range(0.0..WORLD_HEIGHT_BOUND))
 }
 
 pub fn float_min(a: f32, b: f32) -> f32 {

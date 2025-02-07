@@ -13,6 +13,12 @@ pub const WORLD_WIDTH_BOUND: f32 = WORLD_WIDTH_FLOAT - PARTICLE_RADIUS;
 pub const WORLD_HEIGHT_BOUND: f32 = WORLD_HEIGHT_FLOAT - PARTICLE_RADIUS;
 
 
+pub struct Particle {
+    pub(super) position: Point,
+    pub(super) velocity: Vector,
+    pub(super) color: ParticleColor,
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ParticleColor {
     Red,
@@ -45,4 +51,15 @@ impl Into<Color> for ParticleColor {
         }
     }
 }
+
+impl Particle {
+    pub fn new(position: Point, velocity: Vector, color: ParticleColor) -> Self {
+        Particle {
+            position,
+            velocity,
+            color
+        }
+    }
+}
+
 

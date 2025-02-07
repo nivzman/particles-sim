@@ -2,15 +2,18 @@ mod calc;
 mod def;
 
 use femtovg::Canvas;
+use rand::rngs::ThreadRng;
 
 use def::{WorldEdge, PARTICLE_RADIUS, WORLD_WIDTH_BOUND, WORLD_HEIGHT_BOUND};
 
-pub use def::{ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, ForcesConfiguration};
-
+pub use def::{Particle, ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WORLD_WIDTH_FLOAT, WORLD_HEIGHT_FLOAT, ForceRelation, ForcesConfiguration};
+pub use calc::random_position;
 
 mod physics_consts
 {
     pub const WORLD_SINGLE_UNIT_SIZE_IN_PIXELS: f32 = 100.;
+    pub const FORCE_SCALAR: f32 = 0.25;
+
     pub mod real
     {
         pub const MAX_APPLIED_FORCE: f32 = 0.1;
@@ -18,21 +21,16 @@ mod physics_consts
 
     pub mod emergence
     {
-        pub const FRICTION_MULTIPLIER: f32 = 0.5;
-        pub const COMMON_REPEL_FORCE_RADIUS: f32 = 0.1;
+        pub const FRICTION_MULTIPLIER: f32 = 0.6;
+        pub const COMMON_REPEL_FORCE_RADIUS: f32 = 0.3;
     }
 }
 
-
-pub struct Particle {
-    position: Point,
-    velocity: Vector,
-    color: ParticleColor,
-}
 pub struct Simulation {
     particles: Vec<Particle>,
     forces: ForcesConfiguration,
     physics: Physics,
+    rng: ThreadRng
 }
 
 #[derive(Eq, PartialEq)]
@@ -47,6 +45,7 @@ impl Simulation {
             particles,
             forces,
             physics,
+            rng: rand::rng(),
         }
     }
 
@@ -64,8 +63,10 @@ impl Simulation {
     }
 
     fn update_velocities(&mut self) {
-        for particle in self.particles.iter_mut() {
-            particle.velocity *= physics_consts::emergence::FRICTION_MULTIPLIER;
+        if self.physics == Physics::Emergence {
+            for particle in self.particles.iter_mut() {
+                particle.velocity *= physics_consts::emergence::FRICTION_MULTIPLIER;
+            }
         }
 
         for i in 0..self.particles.len() {
@@ -88,15 +89,15 @@ impl Simulation {
             Physics::Real => Self::calculate_force_real(configured_force, distance),
         };
 
+        if force == 0. {
+            return;
+        }
+
+        let force = force * physics_consts::FORCE_SCALAR;
+
         let p1_to_p2_vec = p2.position - p1.position;
         let p1_acceleration = Vector::from_angle_and_length(p1_to_p2_vec.angle_from_x_axis(), force);
         self.particles[p1_index].velocity += p1_acceleration;
-
-        // if self.physics == Physics::Real {
-        //     return;
-        // }
-        //
-        // p1.velocity = p1.velocity.with_length(calc::float_max(0., p1.velocity.length() - physics_consts::emergence::DRAG));
     }
 
     fn calculate_force_real(configured_attraction_force: f32, distance: f32) -> f32 {
@@ -111,7 +112,7 @@ impl Simulation {
 
     fn calculate_force_emergence(configured_attraction_force: f32, distance: f32) -> f32 {
         if distance <= physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS {
-            (distance / physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS) - 1.
+            (distance / physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS) - 1.0
         } else if distance < 1. {
             let numerator = f32::abs((2. * distance) - 1. - physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS);
             let denominator = 1. - physics_consts::emergence::COMMON_REPEL_FORCE_RADIUS;
@@ -125,36 +126,45 @@ impl Simulation {
     fn update_positions(&mut self) {
         for particle in self.particles.iter_mut() {
             particle.position += particle.velocity;
-            if let Some(edge) = calc::check_out_of_bounds(&particle.position) {
-                match edge {
-                    WorldEdge::Left | WorldEdge::Right => {
-                        particle.velocity.x = -particle.velocity.x;
-                        if edge == WorldEdge::Right {
-                            particle.position.x = WORLD_WIDTH_BOUND
-                        } else {
-                            particle.position.x = PARTICLE_RADIUS
-                        }
-                    },
-                    WorldEdge::Top | WorldEdge::Bottom => {
-                        particle.velocity.y = -particle.velocity.y;
-                        if edge == WorldEdge::Bottom {
-                            particle.position.y = WORLD_HEIGHT_BOUND
-                        } else {
-                            particle.position.y = PARTICLE_RADIUS
-                        }
-                    }
-                }
+            match self.physics {
+                Physics::Real => Self::handle_out_of_bounds_real(particle),
+                Physics::Emergence  => Self::handle_out_of_bounds_emergence(particle),
             }
         }
     }
-}
 
-impl Particle {
-    pub fn new(position: Point, velocity: Vector, color: ParticleColor) -> Self {
-        Particle {
-            position,
-            velocity,
-            color
+    fn handle_out_of_bounds_emergence(particle: &mut Particle) {
+        if !calc::is_out_of_bounds(&particle.position) {
+            return;
+        }
+
+        particle.position = random_position();
+        //particle.position.x = (particle.position.x + WORLD_WIDTH_FLOAT) % WORLD_WIDTH_FLOAT;
+        //particle.position.y = (particle.position.y + WORLD_HEIGHT_FLOAT) % WORLD_HEIGHT_FLOAT;
+    }
+
+    fn handle_out_of_bounds_real(particle: &mut Particle) {
+        let Some(edge) = calc::check_out_of_bounds(&particle.position) else {
+            return;
+        };
+
+        match edge {
+            WorldEdge::Left | WorldEdge::Right => {
+                particle.velocity.x = -particle.velocity.x;
+                if edge == WorldEdge::Right {
+                    particle.position.x = WORLD_WIDTH_BOUND
+                } else {
+                    particle.position.x = PARTICLE_RADIUS
+                }
+            },
+            WorldEdge::Top | WorldEdge::Bottom => {
+                particle.velocity.y = -particle.velocity.y;
+                if edge == WorldEdge::Bottom {
+                    particle.position.y = WORLD_HEIGHT_BOUND
+                } else {
+                    particle.position.y = PARTICLE_RADIUS
+                }
+            }
         }
     }
 }
