@@ -1,12 +1,11 @@
 mod init;
 mod sim;
 
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, Physics};
+use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, PhysicsMode};
 
 use femtovg::Color;
 use init::{AppWindowSurface, AppContext};
 use winit::event::{ElementState, Event, MouseScrollDelta, TouchPhase, WindowEvent};
-use rand::Rng;
 
 fn main() {
     let app_context = init::init();
@@ -23,16 +22,16 @@ fn get_real_sim() -> Simulation {
         .with_force(ParticleColor::Red, ParticleColor::Blue, 10.)
         .with_force(ParticleColor::Blue, ParticleColor::Red, -0.1);
 
-    Simulation::new(particles, forces, Physics::Real)
+    Simulation::new(particles, forces, PhysicsMode::Real)
 }
 
 fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
     for _ in 0..800 {
-        particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Red));
-        particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Green));
-        particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Blue));
+        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
+        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
+        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));
     }
 
     let forces = ForcesConfig::empty()
@@ -42,7 +41,7 @@ fn get_emergence_sim() -> Simulation {
         .with_force(ParticleColor::Green, ParticleColor::Green, 0.2)
         .with_force(ParticleColor::Green, ParticleColor::Blue, 0.2);
 
-    Simulation::new(particles, forces, Physics::Emergence)
+    Simulation::new(particles, forces, PhysicsMode::Emergence)
 }
 
 fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
@@ -65,13 +64,13 @@ fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
                     let size = app_context.window.inner_size();
                     app_context.canvas.set_size(size.width, size.height, app_context.window.scale_factor() as f32);
                     app_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
-                    simulation.update_single_tick();
+                    simulation.tick();
                     simulation.draw(&mut app_context.canvas);
                     app_context.surface.present(&mut app_context.canvas);
                 },
                 WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {
-                    (TouchPhase::Moved, MouseScrollDelta::LineDelta(_, vertical_value)) => {
-                        simulation.update_scale_factor(vertical_value);
+                    (TouchPhase::Moved, MouseScrollDelta::LineDelta(_, input)) => {
+                        simulation.update_scale_factor(input);
                     }
                     _ => {}
                 },

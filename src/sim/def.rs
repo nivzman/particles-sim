@@ -3,22 +3,14 @@ use femtovg::Color;
 pub type Vector = euclid::default::Vector2D<f32>;
 pub type Point = euclid::default::Point2D<f32>;
 
-
-pub const WINDOW_WIDTH: u32 = 1000;
-pub const WINDOW_HEIGHT: u32 = 1000;
-pub const WORLD_WIDTH: u32 = 2000;
-pub const WORLD_HEIGHT: u32 = 2000;
-pub const WORLD_WIDTH_FLOAT: f32 = WORLD_WIDTH as f32;
-pub const WORLD_HEIGHT_FLOAT: f32 = WORLD_HEIGHT as f32;
-
 pub struct Particle {
-    pub(super) position: Point,
-    pub(super) velocity: Vector,
-    pub(super) color: ParticleColor,
+    pub(crate) position: Point,
+    pub(crate) velocity: Vector,
+    pub(crate) color: ParticleColor,
 }
 
 #[repr(usize)]
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone)]
 pub enum ParticleColor {
     Red = 0,
     Green = 1,
@@ -38,12 +30,13 @@ pub enum WorldEdge {
     Bottom,
     Top,
 }
+
 impl Into<Color> for ParticleColor {
     fn into(self) -> Color {
         match self {
             ParticleColor::Blue => Color::rgb(0, 0, 255),
-            ParticleColor::Red => Color::rgb(255, 0, 0),
             ParticleColor::Green => Color::rgb(0, 255, 0),
+            ParticleColor::Red => Color::rgb(255, 0, 0),
         }
     }
 }

@@ -19,8 +19,8 @@ use glutin::{
     surface::{SurfaceAttributesBuilder, WindowSurface},
 };
 
-use crate::sim::{WORLD_HEIGHT, WORLD_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH};
-
+pub const WINDOW_WIDTH: u32 = 1000;
+pub const WINDOW_HEIGHT: u32 = 1000;
 
 pub trait AppWindowSurface {
     type Renderer: femtovg::Renderer + 'static;
@@ -86,7 +86,7 @@ pub fn init() -> AppContext<OpenGlWindowSurface> {
         .expect("Cannot create renderer");
 
     let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
-    canvas.set_size(WORLD_WIDTH, WORLD_HEIGHT, window.scale_factor() as f32);
+    canvas.set_size(WINDOW_WIDTH, WINDOW_HEIGHT, window.scale_factor() as f32);
 
     AppContext {
         event_loop,
