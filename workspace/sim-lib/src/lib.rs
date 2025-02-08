@@ -108,7 +108,7 @@ impl Simulation {
             particle.position += particle.velocity;
             match self.physics_mode {
                 PhysicsMode::Real => physics::real::out_of_bounds_fixup(particle),
-                PhysicsMode::Emergence  => physics::emergence::out_of_bounds_fixup(particle),
+                PhysicsMode::Emergence  => physics::real::out_of_bounds_fixup(particle),
             }
         })
     }
