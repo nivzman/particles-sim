@@ -5,10 +5,8 @@ edition = "2021"
 
 [dependencies]
 sim-lib = { path = "../sim-lib" }
-euclid = "0.22.11"
 femtovg = "0.13.0"
 glutin = "0.31.0"
 glutin-winit = "0.4.0"
-rand = "0.9.0"
 raw-window-handle = "0.5.0"
 winit = { version = "0.29.1" }

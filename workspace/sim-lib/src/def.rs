@@ -23,7 +23,7 @@ impl ParticleColor {
     } // TODO
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq)]
 pub enum WorldEdge {
     Left,
     Right,
@@ -70,4 +70,16 @@ impl ForcesConfig {
     pub fn get(&self, who: ParticleColor, to: ParticleColor) -> f32 {
         self.matrix[who as usize][to as usize]
     }
+}
+
+pub enum CameraMoveRequest {
+    Right,
+    Left,
+    Up,
+    Down,
+}
+
+pub enum CameraZoomRequest {
+    In,
+    Out,
 }

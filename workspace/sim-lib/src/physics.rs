@@ -1,6 +1,8 @@
-use crate::{calc, Particle, random_world_position};
-use crate::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
-use crate::def::{WorldEdge};
+use crate::{
+    calc, Particle, random_world_position,
+    constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT},
+    def::WorldEdge,
+};
 
 #[derive(Eq, PartialEq)]
 pub enum PhysicsMode {

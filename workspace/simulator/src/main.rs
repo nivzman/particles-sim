@@ -1,14 +1,71 @@
-mod init;
+mod app;
 
-use sim_lib::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, PhysicsMode};
-
+use sim_lib::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, PhysicsMode, CameraZoomRequest, CameraMoveRequest};
 use femtovg::Color;
-use init::{AppWindowSurface, AppContext};
-use winit::event::{ElementState, Event, MouseScrollDelta, TouchPhase, WindowEvent};
+use app::AppContext;
+use winit::{
+    event::{ElementState, Event, MouseScrollDelta, TouchPhase, WindowEvent},
+    keyboard::KeyCode
+};
 
-fn main() {
-    let app_context = init::init();
-    run(app_context);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app_context = app::init();
+    run(app_context)?;
+    Ok(())
+}
+
+fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
+    //let mut simulation = get_real_sim();
+    let mut simulation = get_emergence_sim();
+
+    let ticker_thread_window = app_context.window.clone();
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            ticker_thread_window.request_redraw();
+        }
+    });
+
+    app_context.event_loop
+        .run(move |event, event_target_window| match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => event_target_window.exit(),
+                WindowEvent::RedrawRequested { .. } => {
+                    let size = app_context.window.inner_size();
+                    app_context.canvas.set_size(size.width, size.height, app_context.window.scale_factor() as f32);
+                    app_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
+                    simulation.tick();
+                    simulation.draw(&mut app_context.canvas);
+                    app_context.surface.present(&mut app_context.canvas).expect("Could not preset canvas to screen");
+                },
+                WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {
+                    (TouchPhase::Moved, MouseScrollDelta::LineDelta(_, input)) => {
+                        if input < 0. {
+                            simulation.update_camera_zoom(CameraZoomRequest::Out);
+                        } else if input > 0. {
+                            simulation.update_camera_zoom(CameraZoomRequest::In);
+                        }
+                    }
+                    _ => {}
+                },
+                WindowEvent::KeyboardInput {
+                    event: winit::event::KeyEvent {
+                        physical_key: winit::keyboard::PhysicalKey::Code(key),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                    ..
+                } => {
+                    if let Some(req) = to_camera_movement(key) {
+                        simulation.update_camera_position(req)
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        })?;
+
+    Ok(())
 }
 
 fn get_real_sim() -> Simulation {
@@ -43,47 +100,12 @@ fn get_emergence_sim() -> Simulation {
     Simulation::new(particles, forces, PhysicsMode::Emergence)
 }
 
-fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
-    //let mut simulation = get_real_sim();
-    let mut simulation = get_emergence_sim();
-
-    let ticker_thread_window = app_context.window.clone();
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(std::time::Duration::from_millis(1));
-            ticker_thread_window.request_redraw();
-        }
-    });
-
-    app_context.event_loop
-        .run(move |event, event_target_window| match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => event_target_window.exit(),
-                WindowEvent::RedrawRequested { .. } => {
-                    let size = app_context.window.inner_size();
-                    app_context.canvas.set_size(size.width, size.height, app_context.window.scale_factor() as f32);
-                    app_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
-                    simulation.tick();
-                    simulation.draw(&mut app_context.canvas);
-                    app_context.surface.present(&mut app_context.canvas);
-                },
-                WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {
-                    (TouchPhase::Moved, MouseScrollDelta::LineDelta(_, input)) => {
-                        simulation.update_scale_factor(input);
-                    }
-                    _ => {}
-                },
-                WindowEvent::KeyboardInput {
-                    event: winit::event::KeyEvent {
-                        physical_key: winit::keyboard::PhysicalKey::Code(key),
-                        state: ElementState::Pressed,
-                        ..
-                    },
-                    ..
-                } => simulation.update_camera_position(key),
-                _ => {}
-            },
-            _ => {}
-        })
-        .unwrap();
+fn to_camera_movement(key: KeyCode) -> Option<CameraMoveRequest> {
+    Some(match key {
+        KeyCode::KeyS | KeyCode::ArrowDown => CameraMoveRequest::Down,
+        KeyCode::KeyW | KeyCode::ArrowUp =>  CameraMoveRequest::Up,
+        KeyCode::KeyD | KeyCode::ArrowRight => CameraMoveRequest::Right,
+        KeyCode::KeyA | KeyCode::ArrowLeft => CameraMoveRequest::Left,
+        _ => return None
+    })
 }

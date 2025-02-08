@@ -1,4 +1,3 @@
-
 pub const WORLD_UNIT_SIZE: f32 = 100.0;
 pub const FORCE_SCALAR: f32 = 0.25;
 pub const BASE_PARTICLE_RADIUS: f32 = 3.0;

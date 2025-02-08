@@ -4,13 +4,12 @@ mod physics;
 mod constants;
 
 use femtovg::Canvas;
-use winit::keyboard::KeyCode;
 
-pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig};
+pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig, CameraMoveRequest, CameraZoomRequest};
 pub use physics::PhysicsMode;
 pub use calc::{random_world_position};
 
-    pub struct Simulation {
+pub struct Simulation {
     particles: Vec<Particle>,
     forces: ForcesConfig,
     physics_mode: PhysicsMode,
@@ -27,6 +26,11 @@ impl Simulation {
             camera_position: Point::new(0., 0.),
             scale_factor: 1.,
         }
+    }
+
+    pub fn tick(&mut self) {
+        self.update_velocities();
+        self.update_positions();
     }
 
     pub fn draw<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>) {
@@ -46,23 +50,21 @@ impl Simulation {
         }
     }
 
-    pub fn update_camera_position(&mut self, pressed_key: KeyCode) {
-        match pressed_key {
-            KeyCode::KeyS | KeyCode::ArrowDown => self.camera_position.y += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            KeyCode::KeyW | KeyCode::ArrowUp => self.camera_position.y -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            KeyCode::KeyD | KeyCode::ArrowRight => self.camera_position.x += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            KeyCode::KeyA | KeyCode::ArrowLeft => self.camera_position.x -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            _ => {},
+    pub fn update_camera_position(&mut self, request: CameraMoveRequest) {
+        match request {
+            CameraMoveRequest::Down => self.camera_position.y += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Up => self.camera_position.y -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Right => self.camera_position.x += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Left => self.camera_position.x -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
         }
     }
 
-    pub fn update_scale_factor(&mut self, input: f32) {
-        self.scale_factor = calc::bounded(self.scale_factor + input * constants::SCALING_SENSITIVITY, constants::MIN_SCALE_FACTOR, constants::MAX_SCALE_FACTOR)
-    }
-
-    pub fn tick(&mut self) {
-        self.update_velocities();
-        self.update_positions();
+    pub fn update_camera_zoom(&mut self, request: CameraZoomRequest) {
+        let diff = match request {
+            CameraZoomRequest::In => constants::SCALING_SENSITIVITY,
+            CameraZoomRequest::Out => -constants::SCALING_SENSITIVITY,
+        };
+        self.scale_factor = calc::bounded(self.scale_factor + diff, constants::MIN_SCALE_FACTOR, constants::MAX_SCALE_FACTOR)
     }
 
     fn update_velocities(&mut self) {
