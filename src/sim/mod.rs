@@ -2,16 +2,16 @@ mod calc;
 mod def;
 
 use femtovg::Canvas;
-use rand::rngs::ThreadRng;
+use def::WorldEdge;
 
-use def::{WorldEdge, PARTICLE_RADIUS, WORLD_WIDTH_BOUND, WORLD_HEIGHT_BOUND};
+pub use def::{Particle, ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, WINDOW_HEIGHT, WINDOW_WIDTH, ForcesConfig};
+pub use calc::{random_position};
 
-pub use def::{Particle, ParticleColor, Point, Vector, WORLD_WIDTH, WORLD_HEIGHT, ForceConfig};
-pub use calc::random_position;
+use crate::sim::def::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
 
 mod physics_consts
 {
-    pub const WORLD_SINGLE_UNIT_SIZE_IN_PIXELS: f32 = 100.;
+    pub const WORLD_SINGLE_UNIT_SIZE_IN_PIXELS: f32 = 100.0;
     pub const FORCE_SCALAR: f32 = 0.25;
 
     pub mod real
@@ -26,11 +26,21 @@ mod physics_consts
     }
 }
 
+mod hud_consts
+{
+    pub const BASE_PARTICLE_RADIUS: f32 = 3.;
+    pub const MAX_SCALE_FACTOR: f32 = 3.0;
+    pub const MIN_SCALE_FACTOR: f32 = 0.1;
+    pub const MOVEMENT_SENSITIVITY: f32 = 20.0;
+    pub const SCALING_SENSITIVITY: f32 = 0.05;
+}
+
 pub struct Simulation {
     particles: Vec<Particle>,
-    forces: ForceConfig,
+    forces: ForcesConfig,
     physics: Physics,
-    rng: ThreadRng
+    camera_position: Point,
+    scale_factor: f32,
 }
 
 #[derive(Eq, PartialEq)]
@@ -40,21 +50,45 @@ pub enum Physics {
 }
 
 impl Simulation {
-    pub fn new(particles: Vec<Particle>, forces: ForceConfig, physics: Physics) -> Self {
+    pub fn new(particles: Vec<Particle>, forces: ForcesConfig, physics: Physics) -> Self {
         Simulation {
             particles,
             forces,
             physics,
-            rng: rand::rng(),
+            camera_position: Point::new(0., 0.),
+            scale_factor: 1.,
         }
     }
 
     pub fn draw<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>) {
+        let min_x = self.camera_position.x;
+        let max_x = self.camera_position.x + (canvas.width() as f32 / self.scale_factor);
+        let min_y = self.camera_position.y;
+        let max_y = self.camera_position.y + (canvas.height() as f32 / self.scale_factor);
+
         for particle in self.particles.iter() {
+            if particle.position.x < min_x || particle.position.x > max_x || particle.position.y < min_y || particle.position.y > max_y {
+                continue;
+            }
+
             let mut path = femtovg::Path::new();
-            path.circle(particle.position.x, particle.position.y, PARTICLE_RADIUS);
+            path.circle((particle.position.x - self.camera_position.x) * self.scale_factor, (particle.position.y - self.camera_position.y) * self.scale_factor, hud_consts::BASE_PARTICLE_RADIUS * self.scale_factor);
             canvas.fill_path(&path, &femtovg::Paint::color(particle.color.into()));
         }
+    }
+
+    pub fn update_camera_position(&mut self, pressed_key: winit::keyboard::KeyCode) {
+        match pressed_key {
+            winit::keyboard::KeyCode::KeyS => self.camera_position.y += hud_consts::MOVEMENT_SENSITIVITY / self.scale_factor,
+            winit::keyboard::KeyCode::KeyW => self.camera_position.y -= hud_consts::MOVEMENT_SENSITIVITY / self.scale_factor,
+            winit::keyboard::KeyCode::KeyD => self.camera_position.x += hud_consts::MOVEMENT_SENSITIVITY / self.scale_factor,
+            winit::keyboard::KeyCode::KeyA => self.camera_position.x -= hud_consts::MOVEMENT_SENSITIVITY / self.scale_factor,
+            _ => {},
+        }
+    }
+
+    pub fn update_scale_factor(&mut self, input: f32) {
+        self.scale_factor = calc::float_max(calc::float_min(self.scale_factor + input * hud_consts::SCALING_SENSITIVITY, hud_consts::MAX_SCALE_FACTOR), hud_consts::MIN_SCALE_FACTOR);
     }
 
     pub fn update_single_tick(&mut self) {
@@ -139,8 +173,6 @@ impl Simulation {
         }
 
         particle.position = random_position();
-        //particle.position.x = (particle.position.x + WORLD_WIDTH_FLOAT) % WORLD_WIDTH_FLOAT;
-        //particle.position.y = (particle.position.y + WORLD_HEIGHT_FLOAT) % WORLD_HEIGHT_FLOAT;
     }
 
     fn handle_out_of_bounds_real(particle: &mut Particle) {
@@ -152,17 +184,17 @@ impl Simulation {
             WorldEdge::Left | WorldEdge::Right => {
                 particle.velocity.x = -particle.velocity.x;
                 if edge == WorldEdge::Right {
-                    particle.position.x = WORLD_WIDTH_BOUND
+                    particle.position.x = WORLD_WIDTH_FLOAT
                 } else {
-                    particle.position.x = PARTICLE_RADIUS
+                    particle.position.x = 0.
                 }
             },
             WorldEdge::Top | WorldEdge::Bottom => {
                 particle.velocity.y = -particle.velocity.y;
                 if edge == WorldEdge::Bottom {
-                    particle.position.y = WORLD_HEIGHT_BOUND
+                    particle.position.y = WORLD_HEIGHT_FLOAT
                 } else {
-                    particle.position.y = PARTICLE_RADIUS
+                    particle.position.y = 0.
                 }
             }
         }

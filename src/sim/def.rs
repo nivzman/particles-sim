@@ -3,14 +3,13 @@ use femtovg::Color;
 pub type Vector = euclid::default::Vector2D<f32>;
 pub type Point = euclid::default::Point2D<f32>;
 
-pub const WORLD_WIDTH: u32 = 1000;
-pub const WORLD_HEIGHT: u32 = 1000;
+
+pub const WINDOW_WIDTH: u32 = 1000;
+pub const WINDOW_HEIGHT: u32 = 1000;
+pub const WORLD_WIDTH: u32 = 2000;
+pub const WORLD_HEIGHT: u32 = 2000;
 pub const WORLD_WIDTH_FLOAT: f32 = WORLD_WIDTH as f32;
 pub const WORLD_HEIGHT_FLOAT: f32 = WORLD_HEIGHT as f32;
-pub const PARTICLE_RADIUS: f32 = 3.;
-pub const WORLD_WIDTH_BOUND: f32 = WORLD_WIDTH_FLOAT - PARTICLE_RADIUS;
-pub const WORLD_HEIGHT_BOUND: f32 = WORLD_HEIGHT_FLOAT - PARTICLE_RADIUS;
-
 
 pub struct Particle {
     pub(super) position: Point,
@@ -59,13 +58,13 @@ impl Particle {
     }
 }
 
-pub struct ForceConfig {
+pub struct ForcesConfig {
     matrix: [[f32; ParticleColor::matrix_len()]; ParticleColor::matrix_len()]
 }
 
-impl ForceConfig {
+impl ForcesConfig {
     pub fn empty() -> Self {
-        ForceConfig {
+        ForcesConfig {
             matrix: [[0.; ParticleColor::matrix_len()]; ParticleColor::matrix_len()]
         }
     }

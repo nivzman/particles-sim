@@ -19,7 +19,7 @@ use glutin::{
     surface::{SurfaceAttributesBuilder, WindowSurface},
 };
 
-use crate::sim::{WORLD_HEIGHT, WORLD_WIDTH};
+use crate::sim::{WORLD_HEIGHT, WORLD_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 
 pub trait AppWindowSurface {
@@ -52,7 +52,7 @@ pub fn init() -> AppContext<OpenGlWindowSurface> {
     let event_loop = EventLoop::new().unwrap();
 
     let window_builder = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(WORLD_WIDTH, WORLD_HEIGHT))
+        .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
         .with_title("Femtovg");
 
     let template = ConfigTemplateBuilder::new().with_alpha_size(8);
@@ -74,8 +74,8 @@ pub fn init() -> AppContext<OpenGlWindowSurface> {
 
     let attrs = SurfaceAttributesBuilder::<WindowSurface>::new().build(
         window.raw_window_handle(),
-        NonZeroU32::new(WORLD_WIDTH).unwrap(),
-        NonZeroU32::new(WORLD_HEIGHT).unwrap(),
+        NonZeroU32::new(WINDOW_WIDTH).unwrap(),
+        NonZeroU32::new(WINDOW_HEIGHT).unwrap(),
     );
 
     let surface = unsafe { gl_config.display().create_window_surface(&gl_config, &attrs).unwrap() };

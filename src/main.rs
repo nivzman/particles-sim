@@ -1,12 +1,11 @@
 mod init;
 mod sim;
 
-use std::collections::HashMap;
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForceConfig, Physics};
+use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, Physics};
 
 use femtovg::Color;
 use init::{AppWindowSurface, AppContext};
-use winit::event::{Event, WindowEvent};
+use winit::event::{ElementState, Event, MouseScrollDelta, TouchPhase, WindowEvent};
 use rand::Rng;
 
 fn main() {
@@ -20,7 +19,7 @@ fn get_real_sim() -> Simulation {
     particles.push(Particle::new(Point::new(500., 500.), Vector::new(0., 0.), ParticleColor::Blue));
     particles.push(Particle::new(Point::new(500., 400.), Vector::new(3., 1.), ParticleColor::Red));
 
-    let forces = ForceConfig::empty()
+    let forces = ForcesConfig::empty()
         .with_force(ParticleColor::Red, ParticleColor::Blue, 10.)
         .with_force(ParticleColor::Blue, ParticleColor::Red, -0.1);
 
@@ -36,7 +35,7 @@ fn get_emergence_sim() -> Simulation {
         particles.push(Particle::new(sim::random_position(), Vector::new(0., 0.), ParticleColor::Blue));
     }
 
-    let forces = ForceConfig::empty()
+    let forces = ForcesConfig::empty()
         .with_force(ParticleColor::Red, ParticleColor::Red, 0.4)
         .with_force(ParticleColor::Blue, ParticleColor::Red, 0.3)
         .with_force(ParticleColor::Blue, ParticleColor::Blue, 0.3)
@@ -53,7 +52,7 @@ fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
     let ticker_thread_window = app_context.window.clone();
     std::thread::spawn(move || {
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(20));
+            std::thread::sleep(std::time::Duration::from_millis(1));
             ticker_thread_window.request_redraw();
         }
     });
@@ -69,11 +68,24 @@ fn run<W: AppWindowSurface>(mut app_context: AppContext<W>) {
                     simulation.update_single_tick();
                     simulation.draw(&mut app_context.canvas);
                     app_context.surface.present(&mut app_context.canvas);
-                }
+                },
+                WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {
+                    (TouchPhase::Moved, MouseScrollDelta::LineDelta(_, vertical_value)) => {
+                        simulation.update_scale_factor(vertical_value);
+                    }
+                    _ => {}
+                },
+                WindowEvent::KeyboardInput {
+                    event: winit::event::KeyEvent {
+                        physical_key: winit::keyboard::PhysicalKey::Code(key),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                    ..
+                } => simulation.update_camera_position(key),
                 _ => {}
             },
             _ => {}
         })
         .unwrap();
 }
-
