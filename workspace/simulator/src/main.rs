@@ -61,7 +61,7 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
                         simulation.update_camera_position(req)
                     } else if key == KeyCode::Digit1 {
                         simulation.set_force_config(ForcesConfig::random(-0.3, 1.0));
-                        simulation.accelerate_all(20.0);
+                        simulation.accelerate_all(50.0);
                     } else if key == KeyCode::Digit2 {
                         simulation.set_force_config(orig_forces);
                     }
