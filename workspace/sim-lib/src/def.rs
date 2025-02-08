@@ -18,9 +18,9 @@ pub enum ParticleColor {
 }
 
 impl ParticleColor {
-    pub const fn matrix_len() -> usize {
+    const fn matrix_len() -> usize {
         return (ParticleColor::Blue as usize) + 1;
-    }
+    } // TODO
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]

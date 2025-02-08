@@ -1,6 +1,6 @@
-use crate::sim::{calc, Particle, random_world_position};
-use crate::sim::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
-use crate::sim::def::{WorldEdge};
+use crate::{calc, Particle, random_world_position};
+use crate::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
+use crate::def::{WorldEdge};
 
 #[derive(Eq, PartialEq)]
 pub enum PhysicsMode {
@@ -64,7 +64,7 @@ pub mod emergence {
 
     pub fn calculate_force(configured_force: f32, distance: f32) -> f32 {
         if distance <= GLOBAL_REPEL_FORCE_RADIUS {
-            (distance / GLOBAL_REPEL_FORCE_RADIUS) - 1.0
+            (distance / GLOBAL_REPEL_FORCE_RADIUS) - 1.
         } else if distance < 1. {
             let numerator = f32::abs((2. * distance) - 1. - GLOBAL_REPEL_FORCE_RADIUS);
             let denominator = 1. - GLOBAL_REPEL_FORCE_RADIUS;

@@ -1,6 +1,6 @@
 use rand::Rng;
-use crate::sim::def::{Point, WorldEdge};
-use crate::sim::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
+use crate::def::{Point, WorldEdge};
+use crate::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
 
 pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
     if !is_out_of_bounds(pos) {
@@ -35,13 +35,12 @@ pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
 }
 
 pub fn is_out_of_bounds(pos: &Point) -> bool {
-    pos.x > WORLD_WIDTH_FLOAT || pos.x < 0.
-        || pos.y > WORLD_HEIGHT_FLOAT || pos.y < 0.
+    pos.x > WORLD_WIDTH_FLOAT || pos.x < 0. || pos.y > WORLD_HEIGHT_FLOAT || pos.y < 0.
 }
 
 pub fn random_world_position() -> Point {
     let mut rng = rand::rng();
-    Point::new(rng.random_range(0.0..WORLD_WIDTH_FLOAT), rng.random_range(0.0..WORLD_HEIGHT_FLOAT))
+    Point::new(rng.random_range(0f32..WORLD_WIDTH_FLOAT), rng.random_range(0f32..WORLD_HEIGHT_FLOAT))
 }
 
 pub fn bounded(value: f32, min: f32, max: f32) -> f32 {

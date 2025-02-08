@@ -10,7 +10,7 @@ pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig};
 pub use physics::PhysicsMode;
 pub use calc::{random_world_position};
 
-pub struct Simulation {
+    pub struct Simulation {
     particles: Vec<Particle>,
     forces: ForcesConfig,
     physics_mode: PhysicsMode,

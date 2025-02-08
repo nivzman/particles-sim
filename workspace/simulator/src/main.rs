@@ -1,7 +1,6 @@
 mod init;
-mod sim;
 
-use sim::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, PhysicsMode};
+use sim_lib::{ParticleColor, Particle, Point, Vector, Simulation, ForcesConfig, PhysicsMode};
 
 use femtovg::Color;
 use init::{AppWindowSurface, AppContext};
@@ -29,9 +28,9 @@ fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
     for _ in 0..800 {
-        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
-        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
-        particles.push(Particle::new(sim::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));
+        particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
+        particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
+        particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));
     }
 
     let forces = ForcesConfig::empty()
