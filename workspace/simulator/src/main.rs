@@ -84,18 +84,23 @@ fn get_real_sim() -> Simulation {
 fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
-    for _ in 0..1200 {
+    for _ in 0..1300 {
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));
+        particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Yellow));
     }
 
     let forces = ForcesConfig::empty()
         .with_force(ParticleColor::Red, ParticleColor::Red, 0.4)
         .with_force(ParticleColor::Blue, ParticleColor::Red, 0.3)
+        .with_force(ParticleColor::Yellow, ParticleColor::Red, 0.4)
         .with_force(ParticleColor::Blue, ParticleColor::Blue, 0.3)
         .with_force(ParticleColor::Green, ParticleColor::Green, 0.2)
-        .with_force(ParticleColor::Green, ParticleColor::Blue, 0.2);
+        .with_force(ParticleColor::Green, ParticleColor::Blue, 0.2)
+        .with_force(ParticleColor::Yellow, ParticleColor::Green, 0.4);
+
+    //let forces = ForcesConfig::random(0.0, 0.9);
 
     Simulation::new(particles, forces, PhysicsMode::Emergence)
 }
