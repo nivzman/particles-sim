@@ -9,20 +9,6 @@ pub struct Particle {
     pub(crate) color: ParticleColor,
 }
 
-#[repr(usize)]
-#[derive(Copy, Clone)]
-pub enum ParticleColor {
-    Red = 0,
-    Green = 1,
-    Blue = 2,
-}
-
-impl ParticleColor {
-    const fn matrix_len() -> usize {
-        return (ParticleColor::Blue as usize) + 1;
-    } // TODO
-}
-
 #[derive(Eq, PartialEq)]
 pub enum WorldEdge {
     Left,
@@ -82,4 +68,43 @@ pub enum CameraMoveRequest {
 pub enum CameraZoomRequest {
     In,
     Out,
+}
+
+macro_rules! define_particle_color {
+    (
+        $name:ident {
+            $($variant:ident = $val:expr),+ $(,)?
+        }
+    ) => {
+        #[derive(Copy, Clone)]
+        #[repr(usize)]
+        pub enum $name {
+            $($variant = $val),+
+        }
+
+        impl $name {
+            #![allow(unused_comparisons)]
+            pub const fn max_value() -> usize {
+                let mut max = 0;
+                $(
+                    max = if $val > max { $val } else { max };
+                )+
+                max
+            }
+        }
+    };
+}
+
+define_particle_color! {
+    ParticleColor {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+    }
+}
+
+impl ParticleColor {
+    const fn matrix_len() -> usize {
+        return (ParticleColor::max_value()) + 1;
+    }
 }
