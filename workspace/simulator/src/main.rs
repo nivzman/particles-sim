@@ -84,7 +84,7 @@ fn get_real_sim() -> Simulation {
 fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
-    for _ in 0..800 {
+    for _ in 0..1200 {
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));

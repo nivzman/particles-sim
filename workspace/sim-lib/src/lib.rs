@@ -52,17 +52,17 @@ impl Simulation {
 
     pub fn update_camera_position(&mut self, request: CameraMoveRequest) {
         match request {
-            CameraMoveRequest::Down => self.camera_position.y += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Up => self.camera_position.y -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Right => self.camera_position.x += constants::MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Left => self.camera_position.x -= constants::MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Down => self.camera_position.y += constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Up => self.camera_position.y -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Right => self.camera_position.x += constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
+            CameraMoveRequest::Left => self.camera_position.x -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
         }
     }
 
     pub fn update_camera_zoom(&mut self, request: CameraZoomRequest) {
         let diff = match request {
-            CameraZoomRequest::In => constants::SCALING_SENSITIVITY,
-            CameraZoomRequest::Out => -constants::SCALING_SENSITIVITY,
+            CameraZoomRequest::In => constants::CAMERA_ZOOM_SENSITIVITY,
+            CameraZoomRequest::Out => -constants::CAMERA_ZOOM_SENSITIVITY,
         };
         self.scale_factor = calc::bounded(self.scale_factor + diff, constants::MIN_SCALE_FACTOR, constants::MAX_SCALE_FACTOR)
     }

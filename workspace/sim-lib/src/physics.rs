@@ -54,7 +54,7 @@ pub mod emergence {
     use super::*;
 
     const FRICTION_MULTIPLIER: f32 = 0.6;
-    const GLOBAL_REPEL_FORCE_RADIUS: f32 = 0.3;
+    const GLOBAL_REPEL_FORCE_RADIUS: f32 = 0.35;
 
     pub fn out_of_bounds_fixup(particle: &mut Particle) {
         if !calc::is_out_of_bounds(&particle.position) {
