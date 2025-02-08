@@ -17,6 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
     //let mut simulation = get_real_sim();
     let mut simulation = get_emergence_sim();
+    let orig_forces = simulation.get_force_config();
 
     let ticker_thread_window = app_context.window.clone();
     std::thread::spawn(move || {
@@ -58,6 +59,11 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
                 } => {
                     if let Some(req) = to_camera_movement(key) {
                         simulation.update_camera_position(req)
+                    } else if key == KeyCode::Digit1 {
+                        simulation.set_force_config(ForcesConfig::random(-0.3, 1.0));
+                        simulation.accelerate_all(20.0);
+                    } else if key == KeyCode::Digit2 {
+                        simulation.set_force_config(orig_forces);
                     }
                 }
                 _ => {}
@@ -99,8 +105,6 @@ fn get_emergence_sim() -> Simulation {
         .with_force(ParticleColor::Green, ParticleColor::Green, 0.2)
         .with_force(ParticleColor::Green, ParticleColor::Blue, 0.2)
         .with_force(ParticleColor::Yellow, ParticleColor::Green, 0.4);
-
-    //let forces = ForcesConfig::random(0.0, 0.9);
 
     Simulation::new(particles, forces, PhysicsMode::Emergence)
 }

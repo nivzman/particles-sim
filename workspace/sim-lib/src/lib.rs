@@ -67,6 +67,19 @@ impl Simulation {
         self.scale_factor = calc::bounded(self.scale_factor + diff, constants::MIN_SCALE_FACTOR, constants::MAX_SCALE_FACTOR)
     }
 
+    pub fn set_force_config(&mut self, forces: ForcesConfig) {
+        self.forces = forces;
+    }
+
+    pub fn get_force_config(&mut self) -> ForcesConfig {
+        self.forces
+    }
+
+    pub fn accelerate_all(&mut self, amount: f32) {
+        let amount = f32::abs(amount);
+        self.particles.iter_mut().for_each(|p| p.velocity = p.velocity.with_length(p.velocity.length() + amount));
+    }
+
     fn update_velocities(&mut self) {
         if self.physics_mode == PhysicsMode::Emergence {
             self.particles.iter_mut().for_each(physics::emergence::apply_friction);

@@ -39,6 +39,7 @@ impl Particle {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct ForcesConfig {
     matrix: [[f32; ParticleColor::matrix_len()]; ParticleColor::matrix_len()]
 }
