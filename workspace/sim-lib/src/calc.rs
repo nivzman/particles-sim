@@ -1,6 +1,8 @@
+use crate::{
+    def::{Point, WorldEdge},
+    constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT},
+};
 use rand::Rng;
-use crate::def::{Point, WorldEdge};
-use crate::constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT};
 
 pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
     if !is_out_of_bounds(pos) {

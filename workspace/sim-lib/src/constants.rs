@@ -5,7 +5,6 @@ pub const MAX_SCALE_FACTOR: f32 = 3.0;
 pub const MIN_SCALE_FACTOR: f32 = 0.1;
 pub const CAMERA_MOVEMENT_SENSITIVITY: f32 = 20.0;
 pub const CAMERA_ZOOM_SENSITIVITY: f32 = 0.05;
-
 pub const WORLD_WIDTH: u32 = 2000;
 pub const WORLD_HEIGHT: u32 = 2000;
 pub const WORLD_WIDTH_FLOAT: f32 = WORLD_WIDTH as f32;

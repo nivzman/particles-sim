@@ -74,13 +74,13 @@ impl Simulation {
 
         for i in 0..self.particles.len() {
             for j in i + 1..self.particles.len() {
-                self.update_velocities_for_pair(i, j);
-                self.update_velocities_for_pair(j, i);
+                self.update_velocities_one_way(i, j);
+                self.update_velocities_one_way(j, i);
             }
         }
     }
 
-    fn update_velocities_for_pair(&mut self, p1_index: usize, p2_index: usize) {
+    fn update_velocities_one_way(&mut self, p1_index: usize, p2_index: usize) {
         let p1 = &self.particles[p1_index];
         let p2 = &self.particles[p2_index];
 
