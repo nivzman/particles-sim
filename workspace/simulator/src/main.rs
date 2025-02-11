@@ -19,6 +19,9 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
     let mut simulation = get_emergence_sim();
     let orig_forces = simulation.get_force_config();
 
+    let mut time_sum = std::time::Duration::from_millis(0);
+    let mut time_count = 0;
+
     let ticker_thread_window = app_context.window.clone();
     std::thread::spawn(move || {
         loop {
@@ -35,7 +38,17 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
                     let size = app_context.window.inner_size();
                     app_context.canvas.set_size(size.width, size.height, app_context.window.scale_factor() as f32);
                     app_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
+
+                    let start = std::time::Instant::now();
                     simulation.tick();
+                    time_sum += start.elapsed();
+                    time_count += 1;
+                    if time_count == 50 {
+                        println!("Avg tick time: {} milliseconds", time_sum.as_millis() / time_count);
+                        time_count = 0;
+                        time_sum = std::time::Duration::from_millis(0);
+                    }
+
                     simulation.draw(&mut app_context.canvas);
                     app_context.surface.present(&mut app_context.canvas).expect("Could not preset canvas to screen");
                 },
@@ -90,7 +103,7 @@ fn get_real_sim() -> Simulation {
 fn get_emergence_sim() -> Simulation {
     let mut particles = Vec::new();
 
-    for _ in 0..1300 {
+    for _ in 0..1700 {
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));

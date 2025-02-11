@@ -4,6 +4,7 @@ use rand::Rng;
 pub type Vector = euclid::default::Vector2D<f32>;
 pub type Point = euclid::default::Point2D<f32>;
 
+#[derive(Copy, Clone)]
 pub struct Particle {
     pub(crate) position: Point,
     pub(crate) velocity: Vector,

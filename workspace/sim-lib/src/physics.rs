@@ -4,7 +4,7 @@ use crate::{
     def::WorldEdge,
 };
 
-#[derive(Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum PhysicsMode {
     Real,
     Emergence,
