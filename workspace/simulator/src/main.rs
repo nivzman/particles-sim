@@ -16,8 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
     //let mut simulation = get_real_sim();
+    let thread_pool = sim_lib::ThreadPool::new(num_cpus::get());
     let mut simulation = get_emergence_sim();
-    let orig_forces = simulation.get_force_config();
+    let orig_forces = simulation.get_forces_config();
 
     let mut time_sum = std::time::Duration::from_millis(0);
     let mut time_count = 0;
@@ -40,7 +41,7 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
                     app_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
                     let start = std::time::Instant::now();
-                    simulation.tick();
+                    simulation.tick(Some(&thread_pool));
                     time_sum += start.elapsed();
                     time_count += 1;
                     if time_count == 50 {
@@ -73,10 +74,10 @@ fn run(mut app_context: AppContext) -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(req) = to_camera_movement(key) {
                         simulation.update_camera_position(req)
                     } else if key == KeyCode::Digit1 {
-                        simulation.set_force_config(ForcesConfig::random(-0.3, 1.0));
+                        simulation.set_forces_config(ForcesConfig::random(-0.3, 1.0));
                         simulation.accelerate_all(50.0);
                     } else if key == KeyCode::Digit2 {
-                        simulation.set_force_config(orig_forces);
+                        simulation.set_forces_config(orig_forces);
                     }
                 }
                 _ => {}

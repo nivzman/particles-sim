@@ -1,8 +1,31 @@
 use crate::{
+    Particle, ForcesConfig, PhysicsMode, Vector, constants, physics,
     def::{Point, WorldEdge},
-    constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT},
+    constants::{WORLD_HEIGHT_FLOAT, WORLD_WIDTH_FLOAT}
 };
 use rand::Rng;
+
+pub fn acceleration_of(p_target: &Particle, p_other: &Particle, forces: &ForcesConfig, physics_mode: PhysicsMode) -> Option<Vector> {
+    let distance = p_target.position.distance_to(p_other.position) / constants::WORLD_UNIT_SIZE;
+
+    if distance == 0. {
+        return None;
+    }
+
+    let configured_force = forces.get(p_target.color, p_other.color);
+
+    let force = match physics_mode {
+        PhysicsMode::Emergence => physics::emergence::calculate_force(configured_force, distance),
+        PhysicsMode::Real => physics::real::calculate_force(configured_force, distance),
+    };
+
+    if force == 0. {
+        return None;
+    }
+
+    let direction_vec = p_other.position - p_target.position;
+    Some(Vector::from_angle_and_length(direction_vec.angle_from_x_axis(), force * constants::FORCE_SCALAR))
+}
 
 pub fn check_out_of_bounds(pos: &Point) -> Option<WorldEdge> {
     if !is_out_of_bounds(pos) {
