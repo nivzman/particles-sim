@@ -74,18 +74,6 @@ impl ForcesConfig {
     }
 }
 
-pub enum CameraMoveRequest {
-    Right,
-    Left,
-    Up,
-    Down,
-}
-
-pub enum CameraZoomRequest {
-    In,
-    Out,
-}
-
 macro_rules! define_particle_color {
     (
         $name:ident {

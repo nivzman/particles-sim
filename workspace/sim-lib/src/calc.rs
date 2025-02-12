@@ -68,7 +68,7 @@ pub fn random_world_position() -> Point {
     Point::new(rng.random_range(0f32..WORLD_WIDTH_FLOAT), rng.random_range(0f32..WORLD_HEIGHT_FLOAT))
 }
 
-pub fn bounded(value: f32, min: f32, max: f32) -> f32 {
+pub fn bounded_value(value: f32, min: f32, max: f32) -> f32 {
     float_min(float_max(value, min), max)
 }
 

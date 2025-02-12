@@ -21,7 +21,7 @@ pub mod real {
         }
 
         let force = configured_force / distance.powi(2);
-        calc::bounded(force, -MAX_APPLIED_FORCE, MAX_APPLIED_FORCE)
+        calc::bounded_value(force, -MAX_APPLIED_FORCE, MAX_APPLIED_FORCE)
     }
 
     pub fn out_of_bounds_fixup(particle: &mut Particle) {

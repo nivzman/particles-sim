@@ -8,21 +8,14 @@ use crossbeam_channel::Sender;
 use femtovg::Canvas;
 
 pub use threadpool::ThreadPool;
-pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig, CameraMoveRequest, CameraZoomRequest};
+pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig};
 pub use physics::PhysicsMode;
-pub use calc::{random_world_position};
+pub use calc::{random_world_position, bounded_value};
 
 pub struct Simulation {
     particles: Vec<Particle>,
     forces: ForcesConfig,
     physics_mode: PhysicsMode,
-    camera_position: Point,
-    scale_factor: f32,
-}
-
-struct JobResult {
-    start_index: usize,
-    accelerations: Vec<Option<Vector>>,
 }
 
 impl Simulation {
@@ -31,8 +24,6 @@ impl Simulation {
             particles,
             forces,
             physics_mode: physics,
-            camera_position: Point::new(0., 0.),
-            scale_factor: 1.,
         }
     }
 
@@ -41,11 +32,11 @@ impl Simulation {
         self.update_positions();
     }
 
-    pub fn draw<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>) {
-        let min_x = self.camera_position.x;
-        let max_x = self.camera_position.x + (canvas.width() as f32 / self.scale_factor);
-        let min_y = self.camera_position.y;
-        let max_y = self.camera_position.y + (canvas.height() as f32 / self.scale_factor);
+    pub fn draw<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>, camera_position: Point, scale_factor: f32) {
+        let min_x = camera_position.x;
+        let max_x = camera_position.x + (canvas.width() as f32 / scale_factor);
+        let min_y = camera_position.y;
+        let max_y = camera_position.y + (canvas.height() as f32 / scale_factor);
 
         for particle in self.particles.iter() {
             if particle.position.x < min_x || particle.position.x > max_x || particle.position.y < min_y || particle.position.y > max_y {
@@ -53,26 +44,9 @@ impl Simulation {
             }
 
             let mut path = femtovg::Path::new();
-            path.circle((particle.position.x - self.camera_position.x) * self.scale_factor, (particle.position.y - self.camera_position.y) * self.scale_factor, constants::BASE_PARTICLE_RADIUS * self.scale_factor);
+            path.circle((particle.position.x - camera_position.x) * scale_factor, (particle.position.y - camera_position.y) * scale_factor, constants::BASE_PARTICLE_RADIUS * scale_factor);
             canvas.fill_path(&path, &femtovg::Paint::color(particle.color.into()));
         }
-    }
-
-    pub fn update_camera_position(&mut self, request: CameraMoveRequest) {
-        match request {
-            CameraMoveRequest::Down => self.camera_position.y += constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Up => self.camera_position.y -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Right => self.camera_position.x += constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
-            CameraMoveRequest::Left => self.camera_position.x -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.scale_factor,
-        }
-    }
-
-    pub fn update_camera_zoom(&mut self, request: CameraZoomRequest) {
-        let diff = match request {
-            CameraZoomRequest::In => constants::CAMERA_ZOOM_SENSITIVITY,
-            CameraZoomRequest::Out => -constants::CAMERA_ZOOM_SENSITIVITY,
-        };
-        self.scale_factor = calc::bounded(self.scale_factor + diff, constants::MIN_SCALE_FACTOR, constants::MAX_SCALE_FACTOR)
     }
 
     pub fn set_forces_config(&mut self, forces: ForcesConfig) {
@@ -141,7 +115,7 @@ impl Simulation {
         receiver.iter().take(total_jobs).for_each(|job_result| {
             job_result.accelerations.into_iter().enumerate().for_each(|(i, a)| {
                 if let Some(a) = a {
-                    self.particles[job_result.start_index + i].velocity += a;
+                    self.particles[job_result.chunk_start_index + i].velocity += a;
                 }
             })
         });
@@ -158,7 +132,7 @@ impl Simulation {
     {
         thread_pool.execute(move || {
             let mut result = JobResult {
-                start_index: chunk_start_index,
+                chunk_start_index,
                 accelerations: vec![None; chunk_size],
             };
 
@@ -173,14 +147,19 @@ impl Simulation {
         });
     }
 
-    fn update_velocity_for(&mut self, particle_target_index: usize, other_particle_index: usize) {
+    fn update_velocity_for(&mut self, target_particle_index: usize, other_particle_index: usize) {
         if let Some(acc) = calc::acceleration_of(
-            &self.particles[particle_target_index],
+            &self.particles[target_particle_index],
             &self.particles[other_particle_index],
             &self.forces,
             self.physics_mode
         ) {
-            self.particles[particle_target_index].velocity += acc;
+            self.particles[target_particle_index].velocity += acc;
         }
     }
+}
+
+struct JobResult {
+    chunk_start_index: usize,
+    accelerations: Vec<Option<Vector>>,
 }
