@@ -1,98 +1,76 @@
-use std::{
-    sync::Arc,
-    num::NonZeroU32,
-};
-use glutin_winit::DisplayBuilder;
-use raw_window_handle::HasRawWindowHandle;
-use winit::{
-    event_loop::EventLoop,
-    window::{WindowBuilder, Window},
-    dpi::PhysicalSize,
-};
-use femtovg::{
-    Canvas,
-    renderer::OpenGl,
-};
-use glutin::{
-    config::ConfigTemplateBuilder,
-    context::{ContextAttributesBuilder, PossiblyCurrentContext},
-    display::GetGlDisplay,
-    prelude::*,
-    surface::{Surface, SurfaceAttributesBuilder, WindowSurface},
-};
+use femtovg::Canvas;
+use winit::keyboard::KeyCode;
+use sim_lib::{World, ForcesConfig, Point, ThreadPool};
+use crate::constants;
 
-const WINDOW_WIDTH: u32 = 800;
-const WINDOW_HEIGHT: u32 = 800;
-
-pub struct OpenGlWindowSurface {
-    context: PossiblyCurrentContext,
-    surface: Surface<WindowSurface>,
+pub struct App {
+    pub world: World,
+    pub thread_pool: ThreadPool,
+    pub camera_position: Point,
+    pub camera_scale_factor: f32,
+    pub default_forces_config: ForcesConfig
 }
 
-impl OpenGlWindowSurface {
-    pub fn present(&self, canvas: &mut Canvas<OpenGl>) -> Result<(), Box<dyn std::error::Error>> {
-        canvas.flush();
-        self.surface.swap_buffers(&self.context)?;
-        Ok(())
+impl App {
+    pub fn new(world: World) -> Self {
+        let default_forces_config = world.get_forces_config();
+        App {
+            world,
+            thread_pool: ThreadPool::new(num_cpus::get()),
+            camera_position: Point::new(0., 0.),
+            camera_scale_factor: 1.,
+            default_forces_config,
+        }
+    }
+
+    pub fn tick_world(&mut self) {
+        self.world.tick(Some(&self.thread_pool));
+    }
+
+    pub fn draw_world<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>) {
+        self.world.draw(canvas, self.camera_position, self.camera_scale_factor);
+    }
+
+    pub fn update_camera_position(&mut self, request: CameraMoveRequest) {
+        match request {
+            CameraMoveRequest::Down => self.camera_position.y += constants::CAMERA_MOVEMENT_SENSITIVITY / self.camera_scale_factor,
+            CameraMoveRequest::Up => self.camera_position.y -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.camera_scale_factor,
+            CameraMoveRequest::Right => self.camera_position.x += constants::CAMERA_MOVEMENT_SENSITIVITY / self.camera_scale_factor,
+            CameraMoveRequest::Left => self.camera_position.x -= constants::CAMERA_MOVEMENT_SENSITIVITY / self.camera_scale_factor,
+        }
+    }
+
+    pub fn update_camera_zoom(&mut self, request: CameraZoomRequest) {
+        let diff = match request {
+            CameraZoomRequest::In => constants::CAMERA_ZOOM_SENSITIVITY,
+            CameraZoomRequest::Out => -constants::CAMERA_ZOOM_SENSITIVITY,
+        };
+        self.camera_scale_factor = sim_lib::bounded_value(self.camera_scale_factor + diff, constants::MIN_CAMERA_SCALE_FACTOR, constants::MAX_CAMERA_SCALE_FACTOR)
     }
 }
 
-pub struct AppContext {
-    pub event_loop: EventLoop<()>,
-    pub window: Arc<Window>,
-    pub canvas: Canvas<OpenGl>,
-    pub surface: OpenGlWindowSurface,
+pub enum CameraMoveRequest {
+    Right,
+    Left,
+    Up,
+    Down,
 }
 
-pub fn init() -> AppContext {
-    let event_loop = EventLoop::new().expect("Could not create event loop");
+pub enum CameraZoomRequest {
+    In,
+    Out,
+}
 
-    let window_builder = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
-        .with_title("Simulator");
+impl TryFrom<KeyCode> for CameraMoveRequest {
+    type Error = ();
 
-    let template = ConfigTemplateBuilder::new().with_alpha_size(8);
-
-    let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
-
-    let (window, gl_config) = display_builder
-        .build(&event_loop, template, |mut configs| configs.next().expect("No display config"))
-        .expect("Window build failed");
-
-    let window = window.expect("No window could be retrieved");
-
-    let gl_display = gl_config.display();
-
-    let context_attributes = ContextAttributesBuilder::new().build(Some(window.raw_window_handle()));
-
-    let mut not_current_gl_context = Some(unsafe { gl_display.create_context(&gl_config, &context_attributes).expect("OpenGl create context failed") });
-
-    let attrs = SurfaceAttributesBuilder::<WindowSurface>::new().build(
-        window.raw_window_handle(),
-        NonZeroU32::new(WINDOW_WIDTH).expect("Zero value provided"),
-        NonZeroU32::new(WINDOW_HEIGHT).expect("Zero value provided"),
-    );
-
-
-    let surface = unsafe { gl_config.display().create_window_surface(&gl_config, &attrs).expect("OpenGl create window surface failed")  };
-
-    let context = not_current_gl_context.take()
-        .expect("No OpenGl context")
-        .make_current(&surface)
-        .expect("OpenGl make current context failed");
-
-    let renderer = unsafe { OpenGl::new_from_function_cstr(|s| gl_display.get_proc_address(s).cast()) }
-        .expect("Cannot create renderer");
-
-    let mut canvas = Canvas::new(renderer)
-        .expect("Cannot create canvas");
-
-    canvas.set_size(WINDOW_WIDTH, WINDOW_HEIGHT, window.scale_factor() as f32);
-
-    AppContext {
-        event_loop,
-        window: Arc::new(window),
-        canvas,
-        surface: OpenGlWindowSurface { context, surface }
+    fn try_from(key: KeyCode) -> Result<Self, Self::Error> {
+        Ok(match key {
+            KeyCode::KeyS | KeyCode::ArrowDown => CameraMoveRequest::Down,
+            KeyCode::KeyW | KeyCode::ArrowUp =>  CameraMoveRequest::Up,
+            KeyCode::KeyD | KeyCode::ArrowRight => CameraMoveRequest::Right,
+            KeyCode::KeyA | KeyCode::ArrowLeft => CameraMoveRequest::Left,
+            _ => return Err(())
+        })
     }
 }

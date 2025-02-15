@@ -12,15 +12,15 @@ pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig};
 pub use physics::PhysicsMode;
 pub use calc::{random_world_position, bounded_value};
 
-pub struct Simulation {
+pub struct World {
     particles: Vec<Particle>,
     forces: ForcesConfig,
     physics_mode: PhysicsMode,
 }
 
-impl Simulation {
+impl World {
     pub fn new(particles: Vec<Particle>, forces: ForcesConfig, physics: PhysicsMode) -> Self {
-        Simulation {
+        World {
             particles,
             forces,
             physics_mode: physics,
