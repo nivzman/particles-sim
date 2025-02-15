@@ -1,6 +1,7 @@
 mod graphics;
 mod constants;
 mod app;
+mod timer;
 
 use sim_lib::{ParticleColor, Particle, Point, Vector, World, ForcesConfig, PhysicsMode};
 use femtovg::Color;
@@ -21,9 +22,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn run(mut graphics_context: GraphicsContext) -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new(get_emergence_world());
 
-    let mut time_sum = std::time::Duration::from_millis(0);
-    let mut time_count = 0;
-
     let ticker_thread_window = graphics_context.window.clone();
     std::thread::spawn(move || {
         loop {
@@ -37,20 +35,18 @@ fn run(mut graphics_context: GraphicsContext) -> Result<(), Box<dyn std::error::
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => event_target_window.exit(),
                 WindowEvent::RedrawRequested { .. } => {
-                    let start = std::time::Instant::now();
-                    app.tick_world();
-                    time_sum += start.elapsed();
-                    time_count += 1;
-                    if time_count == 50 {
-                        println!("Avg tick time: {} milliseconds", time_sum.as_millis() / time_count);
-                        time_count = 0;
-                        time_sum = std::time::Duration::from_millis(0);
+                    app.single_world_tick();
+
+                    if let Some(avg_duration) = app.consume_world_tick_average_time() {
+                        println!("Average tick time: {} milliseconds", avg_duration.as_millis());
                     }
 
                     let size = graphics_context.window.inner_size();
                     graphics_context.canvas.set_size(size.width, size.height, graphics_context.window.scale_factor() as f32);
                     graphics_context.canvas.clear_rect(0, 0, size.width, size.height, Color::black());
+
                     app.draw_world(&mut graphics_context.canvas);
+
                     graphics_context.surface.present(&mut graphics_context.canvas).expect("Could not preset canvas to screen");
                 },
                 WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {

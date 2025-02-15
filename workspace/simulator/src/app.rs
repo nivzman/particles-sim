@@ -1,14 +1,19 @@
+use std::time::Duration;
 use femtovg::Canvas;
 use winit::keyboard::KeyCode;
 use sim_lib::{World, ForcesConfig, Point, ThreadPool};
-use crate::constants;
+use crate::{
+    constants,
+    timer::Timer,
+};
 
 pub struct App {
     pub world: World,
     pub thread_pool: ThreadPool,
     pub camera_position: Point,
     pub camera_scale_factor: f32,
-    pub default_forces_config: ForcesConfig
+    pub default_forces_config: ForcesConfig,
+    pub tick_timer: Timer,
 }
 
 impl App {
@@ -20,11 +25,14 @@ impl App {
             camera_position: Point::new(0., 0.),
             camera_scale_factor: 1.,
             default_forces_config,
+            tick_timer: Timer::new(50),
         }
     }
 
-    pub fn tick_world(&mut self) {
+    pub fn single_world_tick(&mut self) {
+        let measurement = self.tick_timer.start();
         self.world.tick(Some(&self.thread_pool));
+        measurement.end();
     }
 
     pub fn draw_world<R: femtovg::Renderer>(&self, canvas: &mut Canvas<R>) {
@@ -46,6 +54,10 @@ impl App {
             CameraZoomRequest::Out => -constants::CAMERA_ZOOM_SENSITIVITY,
         };
         self.camera_scale_factor = sim_lib::bounded_value(self.camera_scale_factor + diff, constants::MIN_CAMERA_SCALE_FACTOR, constants::MAX_CAMERA_SCALE_FACTOR)
+    }
+
+    pub fn consume_world_tick_average_time(&mut self) -> Option<Duration> {
+        self.tick_timer.consume_average_time()
     }
 }
 
