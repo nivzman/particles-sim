@@ -12,11 +12,18 @@ pub use threadpool::ThreadPool;
 pub use def::{Particle, ParticleColor, Point, Vector, ForcesConfig};
 pub use physics::PhysicsMode;
 pub use calc::{random_world_position, bounded_value};
+pub use gpu::Executor as GpuExecutor;
 
 pub struct World {
     particles: Vec<Particle>,
     forces: ForcesConfig,
     physics_mode: PhysicsMode,
+}
+
+pub enum CalculationMethod {
+    ThreadPool(ThreadPool),
+    GPU(GpuExecutor),
+    SingleThread
 }
 
 impl World {
@@ -28,8 +35,8 @@ impl World {
         }
     }
 
-    pub fn tick(&mut self, thread_pool: Option<&ThreadPool>) {
-        self.update_velocities(thread_pool);
+    pub fn tick(&mut self, calculation_method: &CalculationMethod) {
+        self.update_velocities(calculation_method);
         self.update_positions();
     }
 
@@ -62,14 +69,15 @@ impl World {
         self.particles.iter_mut().for_each(|p| p.velocity = p.velocity.with_length(p.velocity.length() + f32::abs(amount)));
     }
 
-    fn update_velocities(&mut self, thread_pool: Option<&ThreadPool>) {
+    fn update_velocities(&mut self, calculation_method: &CalculationMethod) {
         if self.physics_mode == PhysicsMode::Emergence {
             self.particles.iter_mut().for_each(physics::emergence::apply_friction);
         }
 
-        match thread_pool {
-            Some(pool) => self.thread_pool_update_velocities(pool),
-            None => self.no_thread_pool_update_velocities(),
+        match calculation_method {
+            CalculationMethod::ThreadPool(pool) => self.thread_pool_update_velocities(pool),
+            CalculationMethod::GPU(executor) => self.gpu_update_velocities(executor),
+            CalculationMethod::SingleThread => self.no_thread_pool_update_velocities(),
         }
     }
 
@@ -81,6 +89,17 @@ impl World {
                 PhysicsMode::Emergence  => physics::emergence::out_of_bounds_fixup(particle),
             }
         })
+    }
+
+    fn gpu_update_velocities(&mut self, executor: &GpuExecutor) {
+        assert_eq!(self.physics_mode, PhysicsMode::Emergence);
+
+        executor.calculate_emergence_accelerations(self.particles.as_slice(), &self.forces)
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, acc)| {
+                self.particles[i].velocity += acc;
+            });
     }
 
     fn no_thread_pool_update_velocities(&mut self) {

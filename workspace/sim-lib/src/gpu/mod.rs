@@ -17,7 +17,7 @@ const ZERO_ACCELERATION: interface::OutcomeAcceleration = interface::OutcomeAcce
 };
 
 pub struct Executor {
-    context: Context,
+    _context: Context,
     module: Module,
     stream: Stream,
 }
@@ -25,13 +25,13 @@ pub struct Executor {
 impl Executor {
     pub fn new() -> Self {
         Executor {
-            context: cust::quick_init().unwrap(),
+            _context: cust::quick_init().unwrap(),
             module: Module::from_ptx(PTX, &[]).unwrap(),
             stream: Stream::new(StreamFlags::NON_BLOCKING, None).unwrap(),
         }
     }
 
-    pub fn calculate_emergence_accelerations(&mut self, particles: &[Particle], forces_config: &ForcesConfig) -> Vec<Vector> {
+    pub(crate) fn calculate_emergence_accelerations(&self, particles: &[Particle], forces_config: &ForcesConfig) -> Vec<Vector> {
         let mut outcomes = vec![ZERO_ACCELERATION; particles.len()];
         let outcomes_gpu = outcomes.as_slice().as_dbuf().unwrap();
         let constants_gpu = Self::alloc_gpu_constants();

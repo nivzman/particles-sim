@@ -47,6 +47,10 @@ fn run(mut graphics_context: GraphicsContext) -> Result<(), Box<dyn std::error::
 
                     app.draw_world(&mut graphics_context.canvas);
 
+                    if let Some(avg_duration) = app.consume_world_draw_average_time() {
+                        println!("Average draw time: {} milliseconds", avg_duration.as_millis());
+                    }
+
                     graphics_context.surface.present(&mut graphics_context.canvas).expect("Could not preset canvas to screen");
                 },
                 WindowEvent::MouseWheel { phase, delta,  .. } => match (phase, delta) {
@@ -100,7 +104,7 @@ fn get_real_world() -> World {
 fn get_emergence_world() -> World {
     let mut particles = Vec::new();
 
-    for _ in 0..1700 {
+    for _ in 0..5_000 {
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Red));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Green));
         particles.push(Particle::new(sim_lib::random_world_position(), Vector::new(0., 0.), ParticleColor::Blue));
