@@ -2,6 +2,7 @@ mod calc;
 mod def;
 mod physics;
 mod constants;
+mod gpu;
 
 use std::sync::Arc;
 use crossbeam_channel::Sender;

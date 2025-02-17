@@ -13,7 +13,7 @@ pub enum PhysicsMode {
 pub mod real {
     use super::*;
 
-    const MAX_APPLIED_FORCE: f32 = 0.1;
+    pub const MAX_APPLIED_FORCE: f32 = 0.1;
 
     pub fn calculate_force(configured_force: f32, distance: f32) -> f32 {
         if distance == 0. {
@@ -53,8 +53,8 @@ pub mod real {
 pub mod emergence {
     use super::*;
 
-    const FRICTION_MULTIPLIER: f32 = 0.65;
-    const GLOBAL_REPEL_FORCE_RADIUS: f32 = 0.35;
+    pub const FRICTION_MULTIPLIER: f32 = 0.65;
+    pub const GLOBAL_REPEL_FORCE_RADIUS: f32 = 0.35;
 
     pub fn out_of_bounds_fixup(particle: &mut Particle) {
         if !calc::is_out_of_bounds(&particle.position) {

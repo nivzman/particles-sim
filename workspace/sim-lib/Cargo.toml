@@ -9,3 +9,5 @@ femtovg = "0.13.0"
 rand = "0.9.0"
 threadpool = "1.8.1"
 crossbeam-channel = "0.5.14"
+cust = { version = "0.3.2" }
+cust_core = { version = "0.1.1" }

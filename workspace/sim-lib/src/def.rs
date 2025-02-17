@@ -64,13 +64,17 @@ impl ForcesConfig {
         self.with_force_unchecked(who as usize, to as usize, force)
     }
 
-    pub fn get(&self, who: ParticleColor, to: ParticleColor) -> f32 {
-        self.matrix[who as usize][to as usize]
-    }
-
-    fn with_force_unchecked(mut self, who: usize, to: usize, force: f32) -> Self {
+    pub fn with_force_unchecked(mut self, who: usize, to: usize, force: f32) -> Self {
         self.matrix[who][to] = force;
         self
+    }
+
+    pub fn get(&self, who: ParticleColor, to: ParticleColor) -> f32 {
+        self.get_unchecked(who as usize, to as usize)
+    }
+
+    pub fn get_unchecked(&self, who: usize, to: usize) -> f32 {
+        self.matrix[who][to]
     }
 }
 
@@ -109,7 +113,7 @@ define_particle_color! {
 }
 
 impl ParticleColor {
-    const fn matrix_len() -> usize {
+    pub const fn matrix_len() -> usize {
         return (ParticleColor::max_value()) + 1;
     }
 }
